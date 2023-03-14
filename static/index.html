@@ -1,68 +1,270 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <meta charset="UTF-8">
   <title>Stock Viewer</title>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script>
-    $(document).ready(function() {
-      $("#stockForm").submit(function(event) {
-        event.preventDefault();
-        var form = $(this);
-        var url = form.attr("action");
-        var ticker = form.find('input[name="ticker"]').val();
-        $.ajax({
-          type: "POST",
-          url: url,
-          data: form.serialize(),
-          success: function(response) {
-            console.log(response);
-            var data = response;
-            var html = '<table><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr>';
-            for (var date in data) {
-              html += '<tr><td>' + date + '</td><td>' + data[date].open + '</td><td>' + data[date].high + '</td><td>' + data[date].low + '</td><td>' + data[date].close + '</td></tr>';
-            }
-            html += '</table>';
-            $("#stockData").html(html);
-          },
-          error: function(response) {
-            console.log(response);
-          }
+  <style>
+
+    /* Main container */
+.container {
+    max-width: 1000px;
+    margin: 20px auto;
+    display: flex;
+    justify-content: space-between;
+    height: 700px; /* add a fixed height */
+}
+
+.left-col {
+  width: 45%;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 20px;
+  border-radius: 5px;
+  margin-right: 12.5px;
+  position: relative;
+  overflow-y: auto; /* enable scrolling */
+}
+
+
+.left-col .stock-info thead th {
+    position: sticky;
+    top: 38px; /* add top margin to align with the header */
+    z-index: 1;
+    background-color: #007bff; /* set background color to match header */
+    color: white; /* set text color to white */
+}
+
+
+/* Stock Tracker header */
+
+/* Stock info table */
+.stock-info {
+    margin-bottom: 20px;
+    border-collapse: collapse;
+    width: 100%;
+    text-align: center;
+}
+
+.stock-info thead {
+    position: sticky;
+    top: 74px;
+    z-index: 1;
+    background-color: #fff;
+    overflow: hidden;
+}
+
+.stock-info th {
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    overflow: hidden;
+}
+
+.stock-info td {
+    text-align: center;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    overflow-y: scroll;
+  max-height: 560px;
+}
+
+.stock-info tbody {
+    overflow-y: scroll;
+    max-height: 120px;
+    position: relative;
+}
+
+.stock-info tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+    /* General styling */
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f1f1f1;
+    }
+    
+
+/* Right column */
+.right-col {
+    width: 50%;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 20px;
+    border-radius: 5px;
+    overflow-y: auto; /* add overflow-y */
+}
+    
+    
+    .news-article {
+        margin-bottom: 20px;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+    }
+    
+    .news-article h3 {
+        margin: 0;
+        font-size: 18px;
+    }
+    
+    .news-article p {
+        margin: 10px 0 0;
+    }
+    
+    .news-article a {
+        color: #0645AD;
+        text-decoration: none;
+    }
+    
+    .news-article a:hover {
+        text-decoration: underline;
+    }
+    
+    .news-header {
+  font-weight: bold;
+  text-align: center;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 5px 5px 0 0;
+  position: sticky;
+  top: 20px;
+  z-index: 1;
+}
+
+.news-articles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 0 0 5px 5px;
+  border: 1px solid #ddd;
+  border-top: none;
+  overflow-y: scroll;
+  max-height: 560px;
+}
+
+    /* Form styling */
+    form {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 20px;
+        padding-right: 59px;
+        margin-left: -100px;
+    }
+    
+    label {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #0058b6;
+
+    }
+    
+    input[type="text"] {
+      padding: 14px;
+      border-radius: 5px;
+      border: none;
+      box-shadow: -1px 5px 4px 1px rgb(2 123 255);
+      margin-bottom: 19px;
+    }
+    
+    input[type="submit"] {
+        padding: 10px;
+        border-radius: 5px;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background-color: #007bff;
+        color: #fff;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    input[type="submit"]:hover {
+        background-color: #0069d9;
+    }
+
+
+
+  </style>
+
+ <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+ <script>
+   $(document).ready(function() {
+    var leftCol = $('.left-col');
+    leftCol.prepend('<h2 class="news-header">Stock Tracker</h2><ul class="news-articles"></ul>');
+
+     $("#stockForm").submit(function(event) {
+       event.preventDefault();
+       var form = $(this);
+       var url = form.attr("action");
+       var ticker = form.find('input[name="ticker"]').val();
+       $.ajax({
+      type: "POST",
+      url: url,
+      data: form.serialize(),
+      success: function(response) {
+        console.log(response);
+        var data = response.sort(function(a, b) {
+          return new Date(b.date) - new Date(a.date);
         });
-        $.ajax({
-          type: "POST",
-          url: "/news",
-          data: form.serialize(),
-          success: function(response) {
-            console.log(response);
-            var data = response;
-            var html = '<ul>';
-            for (var i in data.articles) {
-              var article = data.articles[i];
-              html += '<li><a href="' + article.web_url + '">' + article.headline + '</a></li>';
-            }
-            html += '</ul>';
-            $("#newsData").html(html);
-          },
-          error: function(response) {
-            console.log(response);
-            $("#newsData").html("Error fetching news data: " + response.responseText);
-          }
-        });
-      });
-    });
-  </script>
+        var html = '<table class="stock-info"><thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr></thead><tbody>';
+        for (var i = 0; i < data.length; i++) {
+          var date = new Date(data[i].date).toLocaleDateString('en-US');
+          html += '<tr class="stock-data-row"><td>' + date + '</td><td>' + data[i].open.toFixed(2) + '</td><td>' + data[i].high.toFixed(2) + '</td><td>' + data[i].low.toFixed(2) + '</td><td>' + data[i].close.toFixed(2) + '</td></tr>';
+        }
+        html += '</tbody></table>';
+        $(".left-col table").remove(); // remove previous stock data table
+        $(".left-col").append(html); // append new stock data table
+      },
+      error: function(response) {
+        console.log(response);
+        $(".left-col table").remove(); // remove previous stock data table
+        $(".left-col").html("Error fetching stock data: " + response.responseText);
+      }
+});
+
+
+
+       $.ajax({
+         type: "POST",
+         url: "/news",
+         data: form.serialize(),
+         success: function(response) {
+           console.log(response);
+           var data = response;
+           var html = '';
+           for (var i in data.articles) {
+             var article = data.articles[i];
+             html += '<li class="news-article"><h3><a href="' + article.web_url + '" target="_blank">' + article.headline + '</a></h3><p>' + article.abstract + '</p></li>';
+           }
+           $(".right-col .news-articles").html(html);
+         },
+         error: function(response) {
+           console.log(response);
+           $(".right-col .news-articles").html("Error fetching news data: " + response.responseText);
+         }
+       });
+     });
+   });
+ </script>
 </head>
 
 <body>
-  <form id="stockForm" method="POST" action="/stock">
-    <label for="ticker">Enter Ticker Symbol:</label>
-    <input type="text" id="ticker" name="ticker" required>
-    <input type="submit" value="Submit">
-  </form>
-  <div id="stockData"></div>
-  <div id="newsData"></div>
+ <div class="container">
+   <form id="stockForm" method="POST" action="/stock">
+     <label for="ticker">Enter Ticker Symbol:</label>
+     <input type="text" id="ticker" name="ticker" required>
+     <input type="submit" value="Submit">
+   </form>
+   <div class="left-col">
+   </div>
+   <div class="right-col">
+    <h2 class="news-header">News Articles</h2>
+    <ul class="news-articles"></ul>
+  </div>
+ </div>
 </body>
 
 </html>
