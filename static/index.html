@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Stock Viewer</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $("#stockForm").submit(function(event) {
+        event.preventDefault();
+        var form = $(this);
+        var url = form.attr("action");
+        var ticker = form.find('input[name="ticker"]').val();
+        $.ajax({
+          type: "POST",
+          url: url,
+          data: form.serialize(),
+          success: function(response) {
+            console.log(response);
+            var data = response;
+            var html = '<table><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr>';
+            for (var date in data) {
+              html += '<tr><td>' + date + '</td><td>' + data[date].open + '</td><td>' + data[date].high + '</td><td>' + data[date].low + '</td><td>' + data[date].close + '</td></tr>';
+            }
+            html += '</table>';
+            $("#stockData").html(html);
+          },
+          error: function(response) {
+            console.log(response);
+          }
+        });
+        $.ajax({
+          type: "POST",
+          url: "/news",
+          data: form.serialize(),
+          success: function(response) {
+            console.log(response);
+            var data = response;
+            var html = '<ul>';
+            for (var i in data.articles) {
+              var article = data.articles[i];
+              html += '<li><a href="' + article.web_url + '">' + article.headline + '</a></li>';
+            }
+            html += '</ul>';
+            $("#newsData").html(html);
+          },
+          error: function(response) {
+            console.log(response);
+            $("#newsData").html("Error fetching news data: " + response.responseText);
+          }
+        });
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <form id="stockForm" method="POST" action="/stock">
+    <label for="ticker">Enter Ticker Symbol:</label>
+    <input type="text" id="ticker" name="ticker" required>
+    <input type="submit" value="Submit">
+  </form>
+  <div id="stockData"></div>
+  <div id="newsData"></div>
+</body>
+
+</html>
